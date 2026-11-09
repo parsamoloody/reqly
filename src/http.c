@@ -44,3 +44,4 @@ size_t reqly_http_get_method_count(void)
 {
     return REQLY_HTTP_METHOD_COUNT;
 }
+

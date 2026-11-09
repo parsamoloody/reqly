@@ -83,3 +83,4 @@ const char * const *reqly_protocol_get_methods(ReqlyProtocolId id, size_t *out_c
     }
     return NULL;
 }
+

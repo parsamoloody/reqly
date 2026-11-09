@@ -38,3 +38,4 @@ const char * const *reqly_http_get_method_names(void);
 size_t reqly_http_get_method_count(void);
 
 #endif /* REQLY_HTTP_H */
+

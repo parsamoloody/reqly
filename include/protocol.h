@@ -61,3 +61,4 @@ const char * const *reqly_protocol_get_names(void);
 const char * const *reqly_protocol_get_methods(ReqlyProtocolId id, size_t *out_count);
 
 #endif /* REQLY_PROTOCOL_H */
+
