@@ -38,3 +38,4 @@ void reqly_response_free(ReqlyResponse *res)
     g_free(res->error_message);
     g_free(res);
 }
+

@@ -24,3 +24,4 @@ void reqly_client_send_async(const ReqlyRequest *req,
                              gpointer user_data);
 
 #endif /* REQLY_CLIENT_H */
+
