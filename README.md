@@ -1,33 +1,43 @@
 # Reqly
 
-Reqly is a lightweight API client written in C using GTK 4.
+Reqly is a lightweight, modular API client written in C using GTK 4.
 
-## Current Milestone: Minimal Foundation
+## Current Milestone: Protocol Foundation & Request Bar
 
-This milestone establishes the initial foundation of the project:
-- Clean, modular C architecture separating application lifecycle from UI.
-- Standard GTK 4 application entry point with header bar and minimal window layout.
-- Makefile supporting incremental compilation with strict warnings enabled (`-Wall -Wextra -Wpedantic`).
+This milestone introduces:
+- Extensible protocol subsystem (`protocol.h` / `protocol.c`) ready for HTTP and future protocols (WebSocket, gRPC, etc.).
+- Standard HTTP methods support (`http.h` / `http.c`) covering `GET`, `POST`, `PUT`, `DELETE`, `PATCH`, `HEAD`, and `OPTIONS`.
+- Modern GTK 4 request bar featuring:
+  - Protocol selector dropdown
+  - HTTP method selector dropdown
+  - URL text entry with placeholder and Enter key trigger
+  - "Send" action button with visual feedback
+- Clean separation between application lifecycle, UI layer, protocol definitions, and HTTP logic.
+- Strict compiler warning compliance (`-Wall -Wextra -Wpedantic -std=c11`).
 
 ## Project Structure
 
 ```text
 reqly/
-├── Makefile          # Build definitions (targets: all, run, clean)
-├── README.md         # Project documentation
-├── .gitignore        # Ignored files and directories
-├── include/          # Public header files
-│   ├── app.h         # Application lifecycle management
-│   └── ui.h          # Window and UI component construction
-└── src/              # Implementation source files
-    ├── main.c        # Minimal program entry point
-    ├── app.c         # GtkApplication initialization and event loop
-    └── ui.c          # Main window and layout setup
+├── Makefile            # Build definitions (targets: all, run, clean)
+├── README.md           # Project documentation
+├── .gitignore          # Ignored build outputs and editor files
+├── include/            # Header files
+│   ├── app.h           # Application lifecycle management
+│   ├── ui.h            # Main window and layout construction
+│   ├── protocol.h      # Extensible protocol registry and interface
+│   └── http.h          # HTTP method definitions and conversion utilities
+└── src/                # Implementation source files
+    ├── main.c          # Application entry point
+    ├── app.c           # GtkApplication initialization and event loop
+    ├── ui.c            # Window layout, request bar, and event handlers
+    ├── protocol.c      # Protocol registry and method query implementations
+    └── http.c          # HTTP methods table and conversion routines
 ```
 
 ## Prerequisites
 
-To build and run Reqly, you need a C11 compiler, `make`, `pkg-config`, and the GTK 4 development libraries.
+To build and run Reqly, you need a C11 compiler, `make`, `pkg-config`, and GTK 4 development libraries.
 
 ### Debian / Ubuntu
 ```bash
@@ -65,4 +75,3 @@ Remove all build artifacts:
 ```bash
 make clean
 ```
-

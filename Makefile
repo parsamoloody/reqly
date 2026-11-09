@@ -11,7 +11,7 @@ BUILD_DIR = build
 SRC_DIR = src
 TARGET = $(BUILD_DIR)/reqly
 
-SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/app.c $(SRC_DIR)/ui.c
+SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 DEPS = $(OBJS:.o=.d)
 
