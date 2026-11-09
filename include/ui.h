@@ -12,3 +12,4 @@
 GtkWidget *reqly_ui_create_main_window(GtkApplication *app);
 
 #endif /* REQLY_UI_H */
+

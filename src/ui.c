@@ -7,7 +7,8 @@ GtkWidget *reqly_ui_create_main_window(GtkApplication *app)
     gtk_window_set_default_size(GTK_WINDOW(window), 800, 500);
 
     GtkWidget *header_bar = gtk_header_bar_new();
-    GtkWidget *title_widget = gtk_window_title_new("Reqly", NULL);
+    GtkWidget *title_widget = gtk_label_new("Reqly");
+    gtk_widget_add_css_class(title_widget, "title");
     gtk_header_bar_set_title_widget(GTK_HEADER_BAR(header_bar), title_widget);
     gtk_window_set_titlebar(GTK_WINDOW(window), header_bar);
 
@@ -35,3 +36,4 @@ GtkWidget *reqly_ui_create_main_window(GtkApplication *app)
 
     return window;
 }
+

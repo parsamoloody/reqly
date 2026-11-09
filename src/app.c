@@ -2,10 +2,6 @@
 #include "ui.h"
 #include <gtk/gtk.h>
 
-#ifndef G_APPLICATION_DEFAULT_FLAGS
-#define G_APPLICATION_DEFAULT_FLAGS G_APPLICATION_FLAGS_NONE
-#endif
-
 static void on_app_activate(GtkApplication *app, gpointer user_data)
 {
     (void)user_data;
@@ -22,3 +18,4 @@ int reqly_app_run(int argc, char **argv)
 
     return status;
 }
+
