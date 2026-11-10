@@ -126,11 +126,11 @@ static void on_communicate_done(GObject *source_object, GAsyncResult *async_res,
     GSubprocess *proc = G_SUBPROCESS(source_object);
     ClientRequestContext *ctx = (ClientRequestContext *)user_data;
 
-    char *stdout_str = NULL;
-    char *stderr_str = NULL;
+    GBytes *stdout_bytes = NULL;
+    GBytes *stderr_bytes = NULL;
     GError *error = NULL;
 
-    g_subprocess_communicate_utf8_finish(proc, async_res, &stdout_str, &stderr_str, &error);
+    g_subprocess_communicate_finish(proc, async_res, &stdout_bytes, &stderr_bytes, &error);
 
     ReqlyResponse *response = reqly_response_new();
 
@@ -138,11 +138,40 @@ static void on_communicate_done(GObject *source_object, GAsyncResult *async_res,
         response->error_message = g_strdup(error->message);
         g_error_free(error);
     } else {
+        char *stdout_str = NULL;
+        char *stderr_str = NULL;
+
+        if (stdout_bytes != NULL) {
+            gsize stdout_len = 0;
+            const gchar *data = g_bytes_get_data(stdout_bytes, &stdout_len);
+            if (data != NULL && stdout_len > 0) {
+                stdout_str = g_utf8_make_valid(data, (gssize)stdout_len);
+            }
+        }
+
+        if (stderr_bytes != NULL) {
+            gsize stderr_len = 0;
+            const gchar *data = g_bytes_get_data(stderr_bytes, &stderr_len);
+            if (data != NULL && stderr_len > 0) {
+                stderr_str = g_utf8_make_valid(data, (gssize)stderr_len);
+            }
+        }
+
         parse_curl_output(stdout_str, response);
 
         if (response->status_code == 0 && stderr_str != NULL && *stderr_str != '\0') {
             response->error_message = g_strdup(stderr_str);
         }
+
+        g_free(stdout_str);
+        g_free(stderr_str);
+    }
+
+    if (stdout_bytes != NULL) {
+        g_bytes_unref(stdout_bytes);
+    }
+    if (stderr_bytes != NULL) {
+        g_bytes_unref(stderr_bytes);
     }
 
     if (ctx->callback != NULL) {
@@ -150,8 +179,6 @@ static void on_communicate_done(GObject *source_object, GAsyncResult *async_res,
     }
 
     reqly_response_free(response);
-    g_free(stdout_str);
-    g_free(stderr_str);
     g_free(ctx->stdin_data);
     g_free(ctx);
     g_object_unref(proc);
@@ -176,6 +203,7 @@ void reqly_client_send_async(const ReqlyRequest *req,
     g_ptr_array_add(argv, g_strdup("-s"));
     g_ptr_array_add(argv, g_strdup("-i"));
     g_ptr_array_add(argv, g_strdup("-L"));
+    g_ptr_array_add(argv, g_strdup("--compressed"));
     g_ptr_array_add(argv, g_strdup("--max-redirs"));
     g_ptr_array_add(argv, g_strdup("10"));
 
@@ -236,11 +264,20 @@ void reqly_client_send_async(const ReqlyRequest *req,
     ctx->user_data = user_data;
     ctx->stdin_data = has_body ? g_strdup(req->body) : NULL;
 
-    g_subprocess_communicate_utf8_async(
+    GBytes *stdin_bytes = NULL;
+    if (ctx->stdin_data != NULL) {
+        stdin_bytes = g_bytes_new(ctx->stdin_data, strlen(ctx->stdin_data));
+    }
+
+    g_subprocess_communicate_async(
         proc,
-        ctx->stdin_data,
+        stdin_bytes,
         NULL,
         on_communicate_done,
         ctx
     );
+
+    if (stdin_bytes != NULL) {
+        g_bytes_unref(stdin_bytes);
+    }
 }
