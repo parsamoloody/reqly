@@ -22,6 +22,84 @@ typedef struct {
     GtkWidget *response_headers_view;
 } ReqlyUIContext;
 
+static void init_custom_styles(void)
+{
+    static gboolean initialized = FALSE;
+    if (initialized) {
+        return;
+    }
+    initialized = TRUE;
+
+    GtkCssProvider *provider = gtk_css_provider_new();
+    const char *css =
+        ".status-badge {\n"
+        "    font-weight: bold;\n"
+        "    padding: 3px 10px;\n"
+        "    border-radius: 6px;\n"
+        "}\n"
+        ".status-2xx {\n"
+        "    color: #26a269;\n"
+        "    background-color: rgba(38, 162, 105, 0.18);\n"
+        "}\n"
+        ".status-3xx {\n"
+        "    color: #3584e4;\n"
+        "    background-color: rgba(53, 132, 228, 0.18);\n"
+        "}\n"
+        ".status-4xx {\n"
+        "    color: #e01b24;\n"
+        "    background-color: rgba(224, 27, 36, 0.18);\n"
+        "}\n"
+        ".status-5xx {\n"
+        "    color: #e01b24;\n"
+        "    background-color: rgba(224, 27, 36, 0.18);\n"
+        "}\n"
+        ".status-error {\n"
+        "    color: #e01b24;\n"
+        "    background-color: rgba(224, 27, 36, 0.18);\n"
+        "}\n"
+        ".status-pending {\n"
+        "    color: #868686;\n"
+        "    background-color: rgba(134, 134, 134, 0.15);\n"
+        "}\n";
+
+    gtk_css_provider_load_from_string(provider, css);
+    GdkDisplay *display = gdk_display_get_default();
+    if (display != NULL) {
+        gtk_style_context_add_provider_for_display(
+            display,
+            GTK_STYLE_PROVIDER(provider),
+            GTK_STYLE_PROVIDER_PRIORITY_APPLICATION
+        );
+    }
+    g_object_unref(provider);
+}
+
+static void update_status_badge(GtkWidget *badge, int code, const char *text)
+{
+    gtk_widget_remove_css_class(badge, "status-2xx");
+    gtk_widget_remove_css_class(badge, "status-3xx");
+    gtk_widget_remove_css_class(badge, "status-4xx");
+    gtk_widget_remove_css_class(badge, "status-5xx");
+    gtk_widget_remove_css_class(badge, "status-error");
+    gtk_widget_remove_css_class(badge, "status-pending");
+
+    if (code >= 200 && code < 300) {
+        gtk_widget_add_css_class(badge, "status-2xx");
+    } else if (code >= 300 && code < 400) {
+        gtk_widget_add_css_class(badge, "status-3xx");
+    } else if (code >= 400 && code < 500) {
+        gtk_widget_add_css_class(badge, "status-4xx");
+    } else if (code >= 500 && code < 600) {
+        gtk_widget_add_css_class(badge, "status-5xx");
+    } else if (code == 0) {
+        gtk_widget_add_css_class(badge, "status-error");
+    } else {
+        gtk_widget_add_css_class(badge, "status-pending");
+    }
+
+    gtk_label_set_text(GTK_LABEL(badge), text);
+}
+
 static char *get_text_view_string(GtkWidget *text_view)
 {
     GtkTextBuffer *buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
@@ -46,14 +124,14 @@ static void on_response_received(const ReqlyResponse *res, gpointer user_data)
     gtk_button_set_label(GTK_BUTTON(ctx->send_button), "Send");
 
     if (res == NULL) {
-        gtk_label_set_text(GTK_LABEL(ctx->status_badge), "Status: Error");
+        update_status_badge(ctx->status_badge, 0, "Status: Error");
         set_text_view_string(ctx->response_body_view, "No response received.");
         return;
     }
 
     /* Error handling */
     if (res->error_message != NULL && res->status_code == 0) {
-        gtk_label_set_text(GTK_LABEL(ctx->status_badge), "Status: Connection Error");
+        update_status_badge(ctx->status_badge, 0, "Status: Connection Error");
         gtk_label_set_text(GTK_LABEL(ctx->time_label), "Time: --");
         gtk_label_set_text(GTK_LABEL(ctx->size_label), "Size: --");
 
@@ -69,7 +147,7 @@ static void on_response_received(const ReqlyResponse *res, gpointer user_data)
     snprintf(status_str, sizeof(status_str), "Status: %d %s",
              res->status_code,
              res->status_text ? res->status_text : "");
-    gtk_label_set_text(GTK_LABEL(ctx->status_badge), status_str);
+    update_status_badge(ctx->status_badge, res->status_code, status_str);
 
     /* Time Metrics */
     char time_str[64];
@@ -103,7 +181,7 @@ static void on_send_requested(GtkWidget *widget, gpointer user_data)
 
     const char *url = gtk_editable_get_text(GTK_EDITABLE(ctx->url_entry));
     if (url == NULL || url[0] == '\0') {
-        gtk_label_set_text(GTK_LABEL(ctx->status_badge), "Status: Please enter a URL");
+        update_status_badge(ctx->status_badge, 0, "Status: Please enter a URL");
         return;
     }
 
@@ -113,7 +191,7 @@ static void on_send_requested(GtkWidget *widget, gpointer user_data)
     /* UI feedback: sending */
     gtk_widget_set_sensitive(ctx->send_button, FALSE);
     gtk_button_set_label(GTK_BUTTON(ctx->send_button), "Sending...");
-    gtk_label_set_text(GTK_LABEL(ctx->status_badge), "Status: Sending...");
+    update_status_badge(ctx->status_badge, -1, "Status: Sending...");
     gtk_label_set_text(GTK_LABEL(ctx->time_label), "Time: --");
     gtk_label_set_text(GTK_LABEL(ctx->size_label), "Size: --");
 
@@ -169,6 +247,8 @@ static GtkWidget *create_scrollable_text_view(GtkWidget **out_view, gboolean edi
 
 GtkWidget *reqly_ui_create_main_window(GtkApplication *app)
 {
+    init_custom_styles();
+
     GtkWidget *window = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(window), "Reqly");
     gtk_window_set_default_size(GTK_WINDOW(window), 960, 640);
@@ -255,6 +335,8 @@ GtkWidget *reqly_ui_create_main_window(GtkApplication *app)
 
     ctx->status_badge = gtk_label_new("Status: --");
     gtk_widget_add_css_class(ctx->status_badge, "heading");
+    gtk_widget_add_css_class(ctx->status_badge, "status-badge");
+    gtk_widget_add_css_class(ctx->status_badge, "status-pending");
     gtk_box_append(GTK_BOX(res_status_bar), ctx->status_badge);
 
     ctx->time_label = gtk_label_new("Time: --");
